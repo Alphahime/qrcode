@@ -115,200 +115,197 @@ function LandingPage() {
 
   const handleDownloadQRCode = async () => {
     try {
+      // Importer dynamiquement les bibliothèques
       const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
       
-      // Créer un canvas temporaire pour le QR code seulement
-      const qrElement = document.createElement('div');
-      qrElement.className = 'qr-code-download';
-      qrElement.style.padding = '50px';
-      qrElement.style.background = 'white';
-      qrElement.style.borderRadius = '20px';
-      qrElement.style.boxShadow = '0 10px 30px rgba(0,0,0,0.1)';
-      
-      // Ajouter le QR code avec le design marron/blanc
-      const qrCode = (
-        <div style={{
-          position: 'relative',
-          width: '400px',
-          height: '400px',
-          background: 'white',
-          padding: '20px',
-          borderRadius: '15px',
-          border: '15px solid #8B4513'
-        }}>
-          <QRCodeSVG 
-            value={modalUrl}
-            size={360}
-            level="H"
-            includeMargin={true}
-            fgColor="#8B4513" // Couleur marron pour le QR code
-            bgColor="#FFFFFF" // Fond blanc
-          />
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            background: 'white',
-            padding: '20px',
-            borderRadius: '10px',
-            border: '5px solid #8B4513'
-          }}>
-            <div style={{
-              width: '60px',
-              height: '60px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '40px',
-              color: '#8B4513'
-            }}>
-              <FaQrcode />
-            </div>
-          </div>
-        </div>
-      );
-      
-      // Convertir le QR code en élément DOM
+      // Créer un élément temporaire pour le QR code
       const tempDiv = document.createElement('div');
-      document.body.appendChild(tempDiv);
-      // Ici, nous devrions utiliser ReactDOM pour rendre le composant, mais pour simplifier:
-      tempDiv.innerHTML = `
+      tempDiv.style.position = 'fixed';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.top = '0';
+      tempDiv.style.width = '500px';
+      tempDiv.style.height = '500px';
+      tempDiv.style.padding = '50px';
+      tempDiv.style.background = 'white';
+      tempDiv.style.borderRadius = '20px';
+      tempDiv.style.boxShadow = '0 10px 30px rgba(0,0,0,0.1)';
+      
+      // Ajouter le QR code au DOM temporaire
+      const qrCodeHTML = `
         <div style="
-          padding: 50px;
+          position: relative;
+          width: 400px;
+          height: 400px;
           background: white;
-          border-radius: 20px;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+          padding: 20px;
+          border-radius: 15px;
+          border: 15px solid #8B4513;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         ">
+          <svg width="360" height="360" viewBox="0 0 360 360" xmlns="http://www.w3.org/2000/svg">
+            ${document.querySelector('.qr-wrapper svg').innerHTML}
+          </svg>
           <div style="
-            position: relative;
-            width: 400px;
-            height: 400px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             background: white;
             padding: 20px;
-            border-radius: 15px;
-            border: 15px solid #8B4513;
+            border-radius: 10px;
+            border: 5px solid #8B4513;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
           ">
-            <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
-              <!-- Le QR code sera généré par html2canvas -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="#8B4513">
+              <path d="M1 1h8v8H1zM3 3v4h4V3zM1 15h8v8H1zM3 17v4h4v-4zM15 1h8v8h-8zM17 3v4h4V3zM13 13h2v2h-2zM15 15h2v2h-2zM17 13h2v2h-2zM13 17h2v2h-2zM15 19h2v2h-2zM17 17h2v2h-2zM19 13h2v2h-2zM19 17h2v2h-2zM19 21h2v2h-2z"/>
             </svg>
-            <div style="
-              position: absolute;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              background: white;
-              padding: 20px;
-              border-radius: 10px;
-              border: 5px solid #8B4513;
-            ">
-              <div style="
-                width: 60px;
-                height: 60px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 40px;
-                color: #8B4513;
-              ">
-                <i>QR</i>
-              </div>
-            </div>
           </div>
         </div>
       `;
       
-      html2canvas(tempDiv, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        width: 500,
-        height: 500
-      }).then(canvas => {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgWidth = 150;
-        const imgHeight = 150;
-        
-        // Centrer l'image sur la page
-        const x = (pdf.internal.pageSize.width - imgWidth) / 2;
-        const y = (pdf.internal.pageSize.height - imgHeight) / 2;
-        
-        pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
-        pdf.save('qr-code-marron-blanc.pdf');
-        
-        // Nettoyer
-        document.body.removeChild(tempDiv);
-      });
+      tempDiv.innerHTML = qrCodeHTML;
+      document.body.appendChild(tempDiv);
+      
+      // Attendre que l'image soit chargée
+      setTimeout(() => {
+        html2canvas(tempDiv, {
+          scale: 3, // Haute résolution
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false
+        }).then(canvas => {
+          const imgData = canvas.toDataURL('image/png', 1.0);
+          
+          // Créer le PDF
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const pageWidth = pdf.internal.pageSize.getWidth();
+          const pageHeight = pdf.internal.pageSize.getHeight();
+          
+          // Calculer la taille de l'image pour qu'elle s'adapte à la page
+          const imgWidth = 120; // mm
+          const imgHeight = 120; // mm
+          
+          // Centrer l'image
+          const x = (pageWidth - imgWidth) / 2;
+          const y = (pageHeight - imgHeight) / 2;
+          
+          pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+          pdf.save('qr-code-reseaux-sociaux.pdf');
+          
+          // Nettoyer
+          document.body.removeChild(tempDiv);
+        }).catch(error => {
+          console.error('Erreur html2canvas:', error);
+          fallbackDownload();
+        });
+      }, 100);
       
     } catch (error) {
       console.error('Erreur lors de la génération du PDF:', error);
-      // Fallback: télécharger une image PNG
-      const qrCanvas = document.querySelector('.qr-wrapper svg');
-      if (qrCanvas) {
-        const svgData = new XMLSerializer().serializeToString(qrCanvas);
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
+      fallbackDownload();
+    }
+  };
+
+  // Fallback pour télécharger l'image directement
+  const fallbackDownload = () => {
+    const qrSvg = document.querySelector('.qr-wrapper svg');
+    if (qrSvg) {
+      const svgData = new XMLSerializer().serializeToString(qrSvg);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      // Créer un SVG complet avec le design marron/blanc
+      const completeSVG = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+          <rect width="400" height="400" fill="white" rx="20" ry="20"/>
+          <rect x="15" y="15" width="370" height="370" fill="none" stroke="#8B4513" stroke-width="30" rx="5" ry="5"/>
+          ${svgData.replace('<svg', '<g').replace('</svg>', '</g>')}
+          <rect x="170" y="170" width="60" height="60" fill="white" stroke="#8B4513" stroke-width="10" rx="10" ry="10"/>
+          <path d="M1 1h8v8H1zM3 3v4h4V3zM1 15h8v8H1zM3 17v4h4v-4zM15 1h8v8h-8zM17 3v4h4V3zM13 13h2v2h-2zM15 15h2v2h-2zM17 13h2v2h-2zM13 17h2v2h-2zM15 19h2v2h-2zM17 17h2v2h-2zM19 13h2v2h-2zM19 17h2v2h-2zM19 21h2v2h-2z" 
+                transform="translate(190, 190) scale(2)" fill="#8B4513"/>
+        </svg>
+      `;
+      
+      img.onload = () => {
+        canvas.width = 800; // Haute résolution
+        canvas.height = 800;
+        ctx.drawImage(img, 0, 0, 800, 800);
         
-        img.onload = () => {
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.drawImage(img, 0, 0);
-          
-          // Ajouter un fond blanc
-          const link = document.createElement('a');
-          link.download = 'qr-code-marron-blanc.png';
-          link.href = canvas.toDataURL('image/png');
-          link.click();
-        };
-        
-        img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
-      } else {
-        alert('Erreur lors de la génération du QR code. Essayez d\'imprimer la page à la place.');
-      }
+        const link = document.createElement('a');
+        link.download = 'qr-code-marron-blanc.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      };
+      
+      img.src = 'data:image/svg+xml;base64,' + btoa(completeSVG);
+    } else {
+      alert('Erreur lors de la génération du QR code. Essayez d\'imprimer la page à la place.');
     }
   };
 
   const handlePrint = () => {
     // Créer une fenêtre d'impression avec seulement le QR code
+    const qrElement = document.querySelector('.qr-wrapper');
+    if (!qrElement) return;
+    
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
+      <!DOCTYPE html>
       <html>
         <head>
           <title>QR Code - Mes Réseaux Sociaux</title>
           <style>
-            body { 
-              margin: 0; 
-              padding: 50px; 
-              display: flex; 
-              justify-content: center; 
-              align-items: center; 
-              min-height: 100vh; 
-              background: white; 
-            }
             @media print {
-              body { padding: 0; }
+              @page {
+                margin: 0;
+                size: A4;
+              }
+              body {
+                margin: 0;
+                padding: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                background: white;
+              }
+            }
+            body {
+              margin: 0;
+              padding: 50px;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              min-height: 100vh;
+              background: white;
+            }
+            .print-qr-container {
+              padding: 30px;
+              background: white;
+              border-radius: 20px;
+              border: 15px solid #8B4513;
+              box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             }
           </style>
         </head>
         <body>
-          <div style="
-            padding: 30px;
-            background: white;
-            border-radius: 20px;
-            border: 15px solid #8B4513;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-          ">
-            ${document.querySelector('.qr-wrapper').innerHTML}
+          <div class="print-qr-container">
+            ${qrElement.innerHTML}
           </div>
           <script>
             window.onload = function() {
               window.print();
               setTimeout(function() {
                 window.close();
-              }, 100);
+              }, 1000);
             }
           </script>
         </body>
@@ -320,11 +317,6 @@ function LandingPage() {
   const handleCopyLink = (url) => {
     navigator.clipboard.writeText(url);
     alert('Lien copié dans le presse-papier !');
-  };
-
-  const handleCopyQRUrl = () => {
-    navigator.clipboard.writeText(modalUrl);
-    alert('Lien du QR code copié dans le presse-papier !');
   };
 
   // Vérifier si le modal doit s'ouvrir automatiquement
