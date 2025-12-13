@@ -15,7 +15,7 @@ import './LandingPage.css';
 function LandingPage() {
   const [showSocialModal, setShowSocialModal] = useState(false);
   const [activePlatform, setActivePlatform] = useState('all');
-  const landingPageRef = useRef(null);
+  const qrCodeRef = useRef(null);
 
   // Tous les réseaux sociaux
   const allSocialLinks = [
@@ -113,34 +113,208 @@ function LandingPage() {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  const handleDownloadPDF = async () => {
+  const handleDownloadQRCode = async () => {
     try {
       const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
       
-      const element = landingPageRef.current;
+      // Créer un canvas temporaire pour le QR code seulement
+      const qrElement = document.createElement('div');
+      qrElement.className = 'qr-code-download';
+      qrElement.style.padding = '50px';
+      qrElement.style.background = 'white';
+      qrElement.style.borderRadius = '20px';
+      qrElement.style.boxShadow = '0 10px 30px rgba(0,0,0,0.1)';
       
-      html2canvas(element, {
+      // Ajouter le QR code avec le design marron/blanc
+      const qrCode = (
+        <div style={{
+          position: 'relative',
+          width: '400px',
+          height: '400px',
+          background: 'white',
+          padding: '20px',
+          borderRadius: '15px',
+          border: '15px solid #8B4513'
+        }}>
+          <QRCodeSVG 
+            value={modalUrl}
+            size={360}
+            level="H"
+            includeMargin={true}
+            fgColor="#8B4513" // Couleur marron pour le QR code
+            bgColor="#FFFFFF" // Fond blanc
+          />
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            background: 'white',
+            padding: '20px',
+            borderRadius: '10px',
+            border: '5px solid #8B4513'
+          }}>
+            <div style={{
+              width: '60px',
+              height: '60px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '40px',
+              color: '#8B4513'
+            }}>
+              <FaQrcode />
+            </div>
+          </div>
+        </div>
+      );
+      
+      // Convertir le QR code en élément DOM
+      const tempDiv = document.createElement('div');
+      document.body.appendChild(tempDiv);
+      // Ici, nous devrions utiliser ReactDOM pour rendre le composant, mais pour simplifier:
+      tempDiv.innerHTML = `
+        <div style="
+          padding: 50px;
+          background: white;
+          border-radius: 20px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        ">
+          <div style="
+            position: relative;
+            width: 400px;
+            height: 400px;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            border: 15px solid #8B4513;
+          ">
+            <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+              <!-- Le QR code sera généré par html2canvas -->
+            </svg>
+            <div style="
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              background: white;
+              padding: 20px;
+              border-radius: 10px;
+              border: 5px solid #8B4513;
+            ">
+              <div style="
+                width: 60px;
+                height: 60px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 40px;
+                color: #8B4513;
+              ">
+                <i>QR</i>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      html2canvas(tempDiv, {
         scale: 2,
         useCORS: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        width: 500,
+        height: 500
       }).then(canvas => {
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgWidth = 190;
-        const imgHeight = canvas.height * imgWidth / canvas.width;
+        const imgWidth = 150;
+        const imgHeight = 150;
         
-        pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
-        pdf.save('qr-code-reseaux-sociaux.pdf');
+        // Centrer l'image sur la page
+        const x = (pdf.internal.pageSize.width - imgWidth) / 2;
+        const y = (pdf.internal.pageSize.height - imgHeight) / 2;
+        
+        pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+        pdf.save('qr-code-marron-blanc.pdf');
+        
+        // Nettoyer
+        document.body.removeChild(tempDiv);
       });
+      
     } catch (error) {
       console.error('Erreur lors de la génération du PDF:', error);
-      alert('Erreur lors de la génération du PDF. Essayez d\'imprimer la page à la place.');
+      // Fallback: télécharger une image PNG
+      const qrCanvas = document.querySelector('.qr-wrapper svg');
+      if (qrCanvas) {
+        const svgData = new XMLSerializer().serializeToString(qrCanvas);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        img.onload = () => {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          
+          // Ajouter un fond blanc
+          const link = document.createElement('a');
+          link.download = 'qr-code-marron-blanc.png';
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        };
+        
+        img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+      } else {
+        alert('Erreur lors de la génération du QR code. Essayez d\'imprimer la page à la place.');
+      }
     }
   };
 
   const handlePrint = () => {
-    window.print();
+    // Créer une fenêtre d'impression avec seulement le QR code
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>QR Code - Mes Réseaux Sociaux</title>
+          <style>
+            body { 
+              margin: 0; 
+              padding: 50px; 
+              display: flex; 
+              justify-content: center; 
+              align-items: center; 
+              min-height: 100vh; 
+              background: white; 
+            }
+            @media print {
+              body { padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <div style="
+            padding: 30px;
+            background: white;
+            border-radius: 20px;
+            border: 15px solid #8B4513;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+          ">
+            ${document.querySelector('.qr-wrapper').innerHTML}
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() {
+                window.close();
+              }, 100);
+            }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const handleCopyLink = (url) => {
@@ -162,28 +336,27 @@ function LandingPage() {
   }, []);
 
   return (
-    <div ref={landingPageRef} className="landing-page">
-      {/* En-tête */}
-      <header className="header">
-        <div className="container">
-          <h1 className="logo">Mes Réseaux Sociaux</h1>
-          <p className="tagline">Scannez, choisissez, connectez-vous !</p>
-        </div>
-      </header>
-
+    <div className="landing-page">
       {/* Section principale avec QR code */}
       <main className="main-content">
         <div className="container">
           <div className="qr-section">
             <div className="qr-card">
               <div className="qr-container">
-                <div className="qr-wrapper">
-                  <QRCodeSVG 
-                    value={modalUrl}
-                    size={250}
-                    level="H"
-                    includeMargin={true}
-                  />
+                <div className="qr-wrapper" ref={qrCodeRef}>
+                  <div className="qr-code-marron">
+                    <QRCodeSVG 
+                      value={modalUrl}
+                      size={300}
+                      level="H"
+                      includeMargin={true}
+                      fgColor="#8B4513" // Couleur marron pour le QR code
+                      bgColor="#FFFFFF" // Fond blanc
+                    />
+                    <div className="qr-center-icon">
+                      <FaQrcode />
+                    </div>
+                  </div>
                   <div className="qr-overlay">
                     <button 
                       className="scan-btn"
@@ -200,82 +373,41 @@ function LandingPage() {
                     Scannez ce QR code avec votre téléphone pour voir tous mes réseaux sociaux et choisir celui que vous préférez.
                   </p>
                   
-                  <div className="qr-url">
-                    <code>{modalUrl}</code>
-                    <button 
-                      className="copy-url-btn"
-                      onClick={handleCopyQRUrl}
-                      title="Copier le lien"
+                  <div className="action-buttons">
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setShowSocialModal(true)}
                     >
-                      <FaCopy />
+                      <FaQrcode /> Voir les réseaux
+                    </button>
+                    
+                    <button
+                      className="btn btn-secondary"
+                      onClick={handleShare}
+                    >
+                      <FaShareAlt /> Partager
+                    </button>
+                    
+                    <button
+                      className="btn btn-outline"
+                      onClick={handleDownloadQRCode}
+                    >
+                      <FaDownload /> Télécharger QR
+                    </button>
+
+                    <button
+                      className="btn btn-outline"
+                      onClick={handlePrint}
+                    >
+                      <FaPrint /> Imprimer QR
                     </button>
                   </div>
                 </div>
               </div>
-              
-              <div className="action-buttons">
-                <button
-                  className="btn btn-primary"
-                  onClick={() => setShowSocialModal(true)}
-                >
-                  <FaQrcode /> Voir les réseaux
-                </button>
-                
-                <button
-                  className="btn btn-secondary"
-                  onClick={handleShare}
-                >
-                  <FaShareAlt /> Partager
-                </button>
-                
-                <button
-                  className="btn btn-outline"
-                  onClick={handleDownloadPDF}
-                >
-                  <FaDownload /> Télécharger QR
-                </button>
-              </div>
-            </div>
-            
-            <div className="instructions">
-              <h3>Comment ça marche ?</h3>
-              <ol className="steps">
-                <li>
-                  <span className="step-number">1</span>
-                  <span className="step-text">Scannez le QR code avec l'appareil photo de votre téléphone</span>
-                </li>
-                <li>
-                  <span className="step-number">2</span>
-                  <span className="step-text">Une fenêtre s'ouvre avec tous mes réseaux sociaux</span>
-                </li>
-                <li>
-                  <span className="step-number">3</span>
-                  <span className="step-text">Choisissez le réseau qui vous intéresse</span>
-                </li>
-                <li>
-                  <span className="step-number">4</span>
-                  <span className="step-text">Cliquez pour être redirigé directement vers le compte</span>
-                </li>
-              </ol>
             </div>
           </div>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="footer">
-        <div className="container">
-          <p className="footer-text">
-            © {new Date().getFullYear()} - Tous droits réservés
-          </p>
-          <button 
-            className="print-btn"
-            onClick={handlePrint}
-          >
-            <FaPrint /> Version imprimable
-          </button>
-        </div>
-      </footer>
 
       {/* Modal des réseaux sociaux */}
       {showSocialModal && (
